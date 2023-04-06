@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  firstname       String
+  lastname        String
+  email           String   @unique
+  phone           String?  @unique
+  verified        Boolean?
+  verificationToken String?
+  expiresAt       DateTime?
+  linkSent       DateTime?
+  password        String?
+  referralid      String?
+  referral1       Json?
+  referral2       Json?
+  referral3       Json?
+  referrer1       String?  @default("")
+  referrer2       String?  @default("")
+  referrer3       String?  @default("")
+  balance         Float    @default(0)
+  referralbonus1  Float    @default(0)
+  referralbonus2  Float    @default(0)
+  referralbonus3  Float    @default(0)
+  isAdmin         Boolean  @default(false)
+  lastincometime  DateTime?
+  passwordresetToken PasswordResetToken?
+  currentpackage  Package?
+  currentspecialpackage SpecialPackage[] 
+  currentpackageusage Int @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Package {
+  id         String @id
+  usage      Int    @default(0)
+  user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String @unique
+}
+
+model SpecialPackage {
+  id             String   @id
+  earned         Boolean?
+  index          Int?
+  price          Float?
+  period         Int?
+  totalprice     Float?
+  datepurchased  DateTime?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+}
+
+model PasswordResetToken {
+  id        Int     @id @default(autoincrement())
+  token     String  @unique
+  expiresAt DateTime
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String  @unique
+}
+
+model Purchases {
+  id        String  @id @default(uuid())
+  userid    String
+  packageid String
+  special   String?
+  amount    Float
+  period    Int?
+  currency  String? @default("Naira")
+  initialized Boolean @default(true)
+  completed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Deposits {
+  id        String  @id @default(uuid())
+  userid    String
+  amount    Float
+  currency  String? @default("Naira")
+  initialized Boolean @default(true)
+  completed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Withdrawals {
+  id        String  @id @default(uuid())
+  userid    String
+  accno    String
+  accname    String
+  accbank    String
+  amount    Float
+  currency  String? @default("Naira")
+  initialized Boolean @default(true)
+  completed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
