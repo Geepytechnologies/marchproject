@@ -1,45 +1,35 @@
 const { createError } = require("../error");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 //initiate a purchase
-const initiatepurchase = async (req, res, next) => {
+const purchase = async (req, res, next) => {
   const userid = req.user.id;
   const amount = req.body.amount;
-  const purchaseRequest = new Purchases({ ...req.body, userid, amount });
   try {
-    const data = await purchaseRequest.save();
-    res.status(201).json(data);
+    const debituser = await prisma.user.update({
+      where: { id: userid },
+      data: {
+        balance: {
+          decrement: amount,
+        },
+      },
+    });
+    const purchaseRequest = await prisma.purchases.create({
+      data: { ...req.body, userid, amount },
+    });
+    res.status(201).json({ purchaseRequest, debituser });
   } catch (err) {
     next(err);
   }
 };
 
-//complete a purchase
-const completepurchase = async (req, res, next) => {
-  const userid = req.user.id;
-  const amount = req.body.amount;
-  const checkuser = await User.findById(userid);
-  const user = req.body.id;
-  try {
-    //    const updateduser = await User.findByIdAndUpdate(user,{
-    //     $inc: {balance: req.body.amount},
-    //     $set: req.body,
-    //   },{new: true});
-    const response = await Purchases.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: req.body,
-      },
-      { new: true }
-    );
-    res.status(200).json("purchase updated");
-  } catch (err) {
-    next(err);
-  }
-};
 //get purchase
 const getpurchase = async (req, res, next) => {
   try {
-    const purchase = await Purchases.findById(req.params.id);
+    const purchase = await prisma.purchases.findUnique({
+      where: { id: req.params.id },
+    });
     res.status(200).json(purchase);
   } catch (err) {
     next(err);
@@ -48,7 +38,9 @@ const getpurchase = async (req, res, next) => {
 //get a purchase by a user
 const getuserpurchases = async (req, res, next) => {
   try {
-    const purchase = await Purchases.find({ userid: req.params.id });
+    const purchase = await prisma.purchases.findMany({
+      where: { userid: req.params.id },
+    });
     res.status(200).json(purchase);
   } catch (err) {
     next(err);
@@ -57,16 +49,15 @@ const getuserpurchases = async (req, res, next) => {
 //get all purchases
 const getallpurchases = async (req, res, next) => {
   try {
-    const response = await Purchases.find();
+    const response = await prisma.purchases.findMany();
     res.status(200).json(response);
   } catch (err) {
     next(err);
   }
 };
 module.exports = {
-  initiatepurchase,
+  purchase,
   getpurchase,
-  completepurchase,
   getuserpurchases,
   getallpurchases,
 };

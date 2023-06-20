@@ -156,10 +156,38 @@ const signin = async (req, res, next) => {
     const isMatched = bcrypt.compareSync(req.body.password, user.password);
     if (!isMatched) return next(createError(400, "wrong credentials"));
 
+    //access Token
     const accessToken = jwt.sign(
       { id: user.id, isAdmin: user.isAdmin },
-      process.env.SECRET
+      process.env.ACCESS_SECRET,
+      { expiresIn: "60s" }
     );
+
+    //refresh Token
+    const refreshToken = jwt.sign(
+      { id: user.id, isAdmin: user.isAdmin },
+      process.env.REFRESH_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    //save refresh token to the user model
+    const updatedUser = await prisma.user.update({
+      where: {
+        email: req.body.email,
+      },
+      data: {
+        refreshtoken: refreshToken,
+      },
+    });
+
+    // Creates Secure Cookie with refresh token
+    res.cookie("token", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     const { password, ...others } = user;
 
     res.status(200).json({ others, accessToken });
@@ -299,9 +327,48 @@ const resetPassword = async (req, res, next) => {
   });
 };
 
+const signout = async (req, res, next) => {
+  // On client, also delete the accessToken
+
+  const cookies = req.cookies;
+  if (!cookies?.token) return res.sendStatus(204); //No content
+  const refreshToken = cookies.token;
+
+  // Is refreshToken in db?
+  const foundUser = await prisma.user.findUnique({
+    where: {
+      refreshtoken: refreshToken,
+    },
+  });
+  if (!foundUser) {
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
+    return res.sendStatus(204);
+  }
+
+  // Delete refreshToken in db
+  foundUser.refreshtoken = "";
+  const updatedUser = await prisma.user.update({
+    where: {
+      refreshtoken: refreshToken,
+    },
+    data: {
+      refreshtoken: foundUser.refreshtoken,
+    },
+  });
+  console.log(updatedUser);
+
+  res.clearCookie("token", { httpOnly: true, sameSite: "None", secure: true });
+  res.sendStatus(204);
+};
+
 module.exports = {
   signup,
   signin,
+  signout,
   changepassword,
   forgotpassword,
   verifyEmail,

@@ -1,14 +1,21 @@
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 const { createError } = require("../error");
 
 //initiate a withdrawal
 const initiatewithdrawal = async (req, res, next) => {
   const userid = req.user.id;
   const amount = req.body.amount;
-  const withdrawalRequest = new Withdrawals({ ...req.body, userid, amount });
   try {
-    const data = await withdrawalRequest.save();
-    res.status(201).json(data);
-  } catch (err) {
+    const withdrawalRequest = await prisma.withdrawals.create({
+      data: {
+        ...req.body,
+        userid,
+        amount,
+      },
+    });
+    res.status(201).json(withdrawalRequest);
+  } catch (error) {
     next(err);
   }
 };
@@ -16,25 +23,33 @@ const initiatewithdrawal = async (req, res, next) => {
 //complete a withdrawal
 const completewithdrawal = async (req, res, next) => {
   const userid = req.user.id;
-  const checkuser = await User.findById(userid);
+  const checkuser = await prisma.user.findUnique({
+    where: {
+      id: userid,
+    },
+  });
   const user = req.body.id;
   if (checkuser.isAdmin) {
     try {
-      const updateduser = await User.findByIdAndUpdate(
-        user,
-        {
-          $inc: { balance: -req.body.amount },
-          $set: req.body,
+      const updateduser = await prisma.user.update({
+        where: {
+          id: user,
         },
-        { new: true }
-      );
-      const response = await Withdrawals.findByIdAndUpdate(
-        req.params.id,
-        {
-          $set: req.body,
+        data: {
+          balance: {
+            decrement: req.body.amount,
+          },
+          ...req.body,
         },
-        { new: true }
-      );
+      });
+      const response = await prisma.withdrawals.update({
+        where: {
+          id: req.params.id,
+        },
+        data: {
+          ...req.body,
+        },
+      });
       res.status(200).json({ updateduser, response });
     } catch (err) {
       next(err);
@@ -46,7 +61,9 @@ const completewithdrawal = async (req, res, next) => {
 //get withdrawal
 const getwithdrawal = async (req, res, next) => {
   try {
-    const withdrawal = await Withdrawals.findById(req.params.id);
+    const withdrawal = await prisma.withdrawals.findUnique({
+      where: { id: req.params.id },
+    });
     res.status(200).json(withdrawal);
   } catch (err) {
     next(err);
@@ -56,8 +73,12 @@ const getwithdrawal = async (req, res, next) => {
 //get a withdrawal by user
 const getwithdrawalsbyuser = async (req, res, next) => {
   try {
-    const withdrawal = await Withdrawals.find({ userid: req.params.id });
-    res.status(200).json(withdrawal);
+    const withdrawals = await prisma.withdrawals.findMany({
+      where: {
+        userid: req.params.id,
+      },
+    });
+    res.status(200).json(withdrawals);
   } catch (err) {
     next(err);
   }
@@ -65,7 +86,7 @@ const getwithdrawalsbyuser = async (req, res, next) => {
 //get all deposits
 const getallwithdrawals = async (req, res, next) => {
   try {
-    const response = await Withdrawals.find();
+    const response = await prisma.withdrawals.findMany();
     res.status(200).json(response);
   } catch (err) {
     next(err);

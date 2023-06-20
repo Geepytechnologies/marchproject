@@ -1,17 +1,22 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const mysql = require("mysql");
-const dotenv = require("dotenv").config();
+require("dotenv").config();
 const authRoute = require("./routes/auth");
 const packagesRoute = require("./routes/packages");
 const withdrawalsRoute = require("./routes/withdrawals");
 const depositsRoute = require("./routes/deposits");
 const purchasesRoute = require("./routes/purchases");
 const userRoute = require("./routes/users");
+const refreshTokenRoute = require("./routes/refreshToken");
+const { handleRefreshToken } = require("./controllers/refreshToken");
+const { verifyToken } = require("./verifytoken");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+// const prisma = new PrismaClient({ log: ["query"] });
 
 async function createUser() {
   const newUser = await prisma.user.create({
@@ -72,14 +77,22 @@ async function createUser() {
 //   console.log(users);
 // };
 // getUsers();
+
+const corsOptions = {
+  origin: "http://localhost:5173",
+  credentials: true, // enable cookies and other credentials
+};
+
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use("/api/auth", authRoute);
 app.use("/api/packages", packagesRoute);
 app.use("/api/withdrawals", withdrawalsRoute);
 app.use("/api/deposits", depositsRoute);
 app.use("/api/purchases", purchasesRoute);
 app.use("/api/users", userRoute);
+app.use("/api/refresh", refreshTokenRoute);
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -89,13 +102,14 @@ const db = mysql.createConnection({
 });
 
 app.get("/", (req, res) => {
-  res.send("<h1>Hello from here</h1>");
+  handleRefreshToken();
+  res.status(200);
 });
 async function getUsers() {
   const users = await prisma.user.findMany();
   return users;
 }
-app.get("/users", (req, res) => {
+app.get("/users", verifyToken, (req, res) => {
   getUsers().then((myusers) => {
     res.status(200).json(myusers);
   });

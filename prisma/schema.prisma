@@ -19,6 +19,7 @@ model User {
   phone           String?  @unique
   verified        Boolean?
   verificationToken String?
+  refreshtoken String? @unique @db.VarChar(512)
   expiresAt       DateTime?
   linkSent       DateTime?
   password        String?

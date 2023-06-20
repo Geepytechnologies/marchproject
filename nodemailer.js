@@ -1,11 +1,11 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "mail.reveal.com.ng",
+  host: "mail.dcryptgirl.net",
   port: 465,
   secure: true,
   auth: {
-    user: "support@reveal.com.ng",
+    user: "admin@dcryptgirl.net",
     pass: "Richgift196897",
   },
   tls: {
@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const mailOptions = {
-  from: "support@reveal.com.ng",
+  from: "admin@dcryptgirl.net",
   to: "geepytechnologies@gmail.com",
   subject: "Complete Your Registration",
   html: `<html>

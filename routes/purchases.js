@@ -1,18 +1,21 @@
-const express = require('express')
+const express = require("express");
 const router = express.Router();
-const {initiatepurchase, completepurchase, getallpurchases, getuserpurchases, getpurchase} = require('../controllers/purchases');
-const {verifyToken} = require('../verifytoken');
+const {
+  purchase,
+  getallpurchases,
+  getuserpurchases,
+  getpurchase,
+} = require("../controllers/purchases");
+const { verifyToken } = require("../verifytoken");
 
-router.post("/", verifyToken, initiatepurchase);
-router.put("/:id", verifyToken, completepurchase);
+router.post("/", verifyToken, purchase);
 //get a deposit
-router.get("/find/:id", getpurchase)
-
-
-//get all deposits
-router.get("/find/user/:id", getuserpurchases)
+router.get("/find/:id", getpurchase);
 
 //get all deposits
-router.get("/find", getallpurchases)
+router.get("/find/user/:id", getuserpurchases);
+
+//get all deposits
+router.get("/find", getallpurchases);
 
 module.exports = router;

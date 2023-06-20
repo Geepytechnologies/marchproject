@@ -17,6 +17,8 @@ router.post("/forgotpassword", forgotpassword);
 
 router.post("/signin", signin);
 
+router.get("/signout", signout);
+
 router.get("/verify-email", verifyEmail);
 
 module.exports = router;

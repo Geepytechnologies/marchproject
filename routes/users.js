@@ -19,7 +19,7 @@ const router = express.Router();
 router.put("/:id", verifyToken, update);
 
 //update user for purchase
-router.put("/purchase/:id", verifyToken, updateuserforpurchase);
+// router.put("/purchase/:id", verifyToken, updateuserforpurchase);
 
 //update user for purchase
 router.put("/purchase/special/:id", verifyToken, updateforspecialpackage);
